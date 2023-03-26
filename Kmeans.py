@@ -1,7 +1,10 @@
 import math
+import time
 import csv
 import numpy as np
 from random import random, randrange
+
+from scipy.spatial.distance import cdist
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.model_selection import train_test_split
 
@@ -32,15 +35,10 @@ class Kmeans:
     def __assign_clusters(self, centroids, k):
         print("Assigning clusters..")
         self.clusters = [[] for j in range(k)]
+        similarities = cdist(self.data_matrix, np.asarray(centroids).reshape(k, -1), 'euclidean')
+        idx = np.argmin(similarities, axis=1)
         for i in range(self.data_matrix.shape[0]):
-            max_similarity = -1
-            idx = -1
-            for j in range(len(centroids)):
-                rbf = rbf_kernel(self.data_matrix[i, :].reshape(1, -1), np.asarray(centroids[j]).reshape(1, -1))
-                if rbf > max_similarity:
-                    max_similarity = rbf
-                    idx = j
-            self.clusters[idx].append(i)
+            self.clusters[idx[i]].append(i)
 
     def __update_centroids(self, k):
         print("Updating centroids..")
@@ -48,24 +46,22 @@ class Kmeans:
         for i in range(k):
             print("LEN ", len(self.clusters[i]))
             cluster_sum = np.zeros((1, 41))
-            if (len(self.clusters[i]) == 0):
+            if len(self.clusters[i]) == 0:
                 rnd = randrange(0, self.data_matrix.shape[0])
                 centroids[i] = self.data_matrix[rnd, :]
             else:
                 for j in self.clusters[i]:
-                    cluster_sum = np.add(self.data_matrix[j, :], cluster_sum)
-                centroids[i] = cluster_sum / len(self.clusters[i])
-
+                    cluster_sum = self.data_matrix[j, :] + cluster_sum
+                centroids[i] = (cluster_sum / len(self.clusters[i]))[0]
         return centroids
 
     def algorithm(self):
         k = self.k
         print("K", k)
         iterations = 0
-        delta = [1e-3 for i in range(k)]
         centroids = self.__randomize_centroids(k)
         prev_centroids = np.zeros(np.array(centroids).shape)
-        while (iterations < 10) and (self.__distance(centroids, prev_centroids) > (0.1 * k)):
+        while (self.__distance(centroids, prev_centroids) != 0) and (iterations < 1000):
             iterations += 1
             print("Iteration no: ", iterations)
             self.__assign_clusters(centroids, k)
@@ -77,9 +73,13 @@ class Kmeans:
 
 if __name__ == '__main__':
     # 7, 15, 23, 31, 45
-    k = 31
+    k = 45
+    start = time.time()
     filename = 'kmeans_' + str(k) + '.csv'
     cluster, centroid = Kmeans(Dataset().generate_data_matrix(), k).algorithm()
+    end = time.time()
+    print("time: ")
+    print((end - start) / 60)
     file = open(filename, 'w', newline='')
 
     with file:
