@@ -15,7 +15,7 @@ class Dataset:
         self.labels_unique_values = []
 
     def generate_data_matrix(self):
-        df = pd.read_csv('kddcup.data.corrected', header=None)
+        df = pd.read_csv('datasets/kddcup.data_10_percent_corrected', header=None)
         df.columns = [i for i in range(0, 42)]
         df[1], self.unique_values1 = pd.factorize(df[1])
         df[2], self.unique_values2 = pd.factorize(df[2])
