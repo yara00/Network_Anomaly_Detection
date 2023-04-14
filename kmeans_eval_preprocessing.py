@@ -2,19 +2,17 @@ import csv
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import f1_score
 from scipy.spatial import distance
 
 from Dataset import Dataset
-from conditional_entropy import get_cond_entropy
+from evaluation_module import evaluate
 
 
 def get_numerical(arr, val, n):
     if val in arr:
         idx = arr.index(val)
     else:
+        arr.append(val)
         idx = n
         n += 1
     return idx, n
@@ -70,13 +68,7 @@ def evaluate_kmeans(centroids, X_test, y_test):
     distance_matrix = distance.cdist(X_test, centroids, 'euclidean')
     y_preds = np.argmin(distance_matrix, axis=1)
 
-    # Evaluation
-    precision = precision_score(y_test, y_preds, average='weighted', zero_division=0)
-    recall = recall_score(y_test, y_preds, average='weighted', zero_division=0)
-    f1 = f1_score(y_test, y_preds, average='weighted', zero_division=0)
-    entropy = get_cond_entropy(y_test, y_preds)
-
-    return precision, recall, f1, entropy
+    return evaluate(y_test, y_preds)
 
 
 if __name__ == '__main__':
