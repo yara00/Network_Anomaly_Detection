@@ -1,4 +1,5 @@
 import csv
+from statistics import mode
 
 import numpy as np
 import pandas as pd
@@ -7,7 +8,7 @@ from scipy.spatial import distance
 from Dataset import Dataset
 from evaluation_module import evaluate
 
-
+clusters = []
 def get_numerical(arr, val, n):
     if val in arr:
         idx = arr.index(val)
@@ -17,7 +18,10 @@ def get_numerical(arr, val, n):
         n += 1
     return idx, n
 
-
+def get_clusters(y_preds):
+    for k in range(y_preds.max() + 1):
+        clusters.append(list(np.where(y_preds == k)[0]))
+    return clusters
 def generate_test_data(dataset: Dataset):
     test_data = pd.read_csv('datasets/corrected', header=None).to_numpy()
     rows, cols = test_data.shape
@@ -67,10 +71,37 @@ def evaluate_kmeans(centroids, X_test, y_test):
     # Determine y_preds
     distance_matrix = distance.cdist(X_test, centroids, 'euclidean')
     y_preds = np.argmin(distance_matrix, axis=1)
-
+    clusters = get_clusters(y_preds)
     return evaluate(y_test, y_preds)
 
 
-if __name__ == '__main__':
-    d = Dataset()
-    generate_test_data(d)
+if __name__ == "__main__":
+    X_test, y_test = generate_test_data_2()
+    label_numbers = y_test
+
+    k = [23]    #[7, 15, 23, 31, 45]
+    results = []
+    for val in k:
+        centroids = pd.read_csv(f"kmeans_{val}.csv", header=None, skiprows=[0]).to_numpy()
+        results.append([val] + list(evaluate_kmeans(centroids, X_test, y_test)))
+    df = pd.DataFrame(data=results, columns=['K', 'Precision', 'Recall', 'F1 Score', 'Conditional Entropy'])
+    df.to_csv("kmeans_results.csv")
+
+    dom_label = []
+    print(len(clusters))
+    for c in range (0, len(clusters)):
+        clusters[c] = [label_numbers[x] for x in clusters[c]]
+        if len(clusters[c]) == 0:
+            dom_label.append(-1)
+        else:
+            dom_label.append(mode(clusters[c]))
+
+    cluster_purity = 0
+    for c in range(0, len(clusters)):
+
+        for idx in clusters[c]:
+            if idx == dom_label[c]:
+                cluster_purity = cluster_purity + 1
+
+    print(cluster_purity)
+    print(dom_label)
